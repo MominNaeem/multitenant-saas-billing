@@ -1,0 +1,56 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  owner
+  admin
+  member
+}
+
+enum Plan {
+  free
+  pro
+  enterprise
+}
+
+model Tenant {
+  id                     String   @id @default(cuid())
+  name                   String
+  slug                   String   @unique
+  plan                   Plan     @default(free)
+  stripeCustomerId       String?  @unique
+  stripeSubscriptionId   String?  @unique
+  subscriptionStatus     String?
+  createdAt              DateTime @default(now())
+  users                  User[]
+  documents              Document[]
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  tenantId  String
+  role      Role     @default(member)
+  createdAt DateTime @default(now())
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  tenantId  String
+  title     String
+  content   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+
+  @@index([tenantId])
+}
